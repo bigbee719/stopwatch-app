@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ストップウォッチ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 300px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .display {
+            font-size: 64px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            min-height: 80px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .start-btn {
+            background-color: #48bb78;
+            color: white;
+        }
+
+        .start-btn:hover:not(:disabled) {
+            background-color: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(72, 187, 120, 0.3);
+        }
+
+        .start-btn:disabled {
+            background-color: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        .stop-btn {
+            background-color: #f56565;
+            color: white;
+        }
+
+        .stop-btn:hover:not(:disabled) {
+            background-color: #e53e3e;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 101, 101, 0.3);
+        }
+
+        .stop-btn:disabled {
+            background-color: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        .reset-btn {
+            background-color: #ed8936;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background-color: #dd6b20;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(237, 137, 54, 0.3);
+        }
+
+        .lap-btn {
+            background-color: #4299e1;
+            color: white;
+        }
+
+        .lap-btn:hover:not(:disabled) {
+            background-color: #3182ce;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(66, 153, 225, 0.3);
+        }
+
+        .lap-btn:disabled {
+            background-color: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        .laps {
+            margin-top: 20px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .laps-title {
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .laps-title.show {
+            display: block;
+        }
+
+        .lap-item {
+            background-color: #f7fafc;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .lap-number {
+            font-weight: bold;
+            color: #667eea;
+            min-width: 50px;
+        }
+
+        .lap-time {
+            font-family: 'Courier New', monospace;
+            color: #333;
+            flex: 1;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏱️ ストップウォッチ</h1>
+        <div class="display" id="display">00:00:00</div>
+        <div class="controls">
+            <button class="start-btn" id="startBtn" onclick="startTimer()">スタート</button>
+            <button class="stop-btn" id="stopBtn" onclick="stopTimer()" disabled>ストップ</button>
+            <button class="reset-btn" id="resetBtn" onclick="resetTimer()">リセット</button>
+            <button class="lap-btn" id="lapBtn" onclick="recordLap()" disabled>ラップ</button>
+        </div>
+        <div class="laps">
+            <div class="laps-title" id="lapsTitle">ラップタイム:</div>
+            <div id="lapsList"></div>
+        </div>
+    </div>
+
+    <script>
+        let startTime = 0;
+        let elapsedTime = 0;
+        let timerInterval = null;
+        let isRunning = false;
+        let laps = [];
+
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            const milliseconds = Math.floor((ms % 1000) / 10);
+
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function updateDisplay() {
+            const currentTime = Date.now() - startTime + elapsedTime;
+            document.getElementById('display').textContent = formatTime(currentTime);
+        }
+
+        function startTimer() {
+            if (!isRunning) {
+                startTime = Date.now();
+                isRunning = true;
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('lapBtn').disabled = false;
+
+                timerInterval = setInterval(updateDisplay, 10);
+            }
+        }
+
+        function stopTimer() {
+            if (isRunning) {
+                clearInterval(timerInterval);
+                elapsedTime += Date.now() - startTime;
+                isRunning = false;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('lapBtn').disabled = true;
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            startTime = 0;
+            elapsedTime = 0;
+            isRunning = false;
+            laps = [];
+            document.getElementById('display').textContent = '00:00:00';
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('lapBtn').disabled = true;
+            document.getElementById('lapsList').innerHTML = '';
+            document.getElementById('lapsTitle').classList.remove('show');
+        }
+
+        function recordLap() {
+            if (isRunning) {
+                const currentTime = Date.now() - startTime + elapsedTime;
+                laps.push(currentTime);
+                displayLaps();
+            }
+        }
+
+        function displayLaps() {
+            const lapsList = document.getElementById('lapsList');
+            lapsList.innerHTML = '';
+            laps.forEach((lap, index) => {
+                const lapDiv = document.createElement('div');
+                lapDiv.className = 'lap-item';
+                lapDiv.innerHTML = `
+                    <span class="lap-number">ラップ ${index + 1}</span>
+                    <span class="lap-time">${formatTime(lap)}</span>
+                `;
+                lapsList.appendChild(lapDiv);
+            });
+            if (laps.length > 0) {
+                document.getElementById('lapsTitle').classList.add('show');
+            }
+        }
+    </script>
+</body>
+</html>

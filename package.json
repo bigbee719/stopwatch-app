@@ -1,0 +1,13 @@
+{
+  "name": "stopwatch-app",
+  "version": "1.0.0",
+  "description": "A simple and beautiful stopwatch web application",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": ["stopwatch", "timer", "web"],
+  "author": "",
+  "license": "MIT"
+}
